@@ -11,7 +11,7 @@ This R package (in development) offers an alternative to the concave hull geom i
 - calculates holes, i.e. which polygons are inside other polygons, so that their space can be "subtracted" when plotting by `ggplot2` 
 - optional smoothing (via `smoothr`), offset (via `polyclip`) and joining of overlapping polygons (again via `polyclip`)
 
-The resulting polygon (or sets of polygons) follow the shapes of the point cloud quite closely and, if a point or set of points is far enough, another disjointed polygon is created. This allows to deal with outliers nicely; the current `ggforce` implementation of `geom_mark_hull()` is super fast, but will enclose *all* points no matter how far they are. 
+The resulting polygon (or sets of polygons) follow the shapes of the point cloud quite closely and, if a point or set of points is far enough, another disjointed polygon is created. This allows to deal with outliers nicely; the current `ggforce` implementation of `geom_mark_hull()` is super fast, but will enclose *all* points no matter how far they are. Moreover, and to the best of my knowledge, the concave hull in `ggforce` does not allow holes. 
 
 The step size controls how granular the resulting polygon set is: small step sizes will create shapes that follow the data more closely (at the expense of computing speed and, eventually, usability). 
 
