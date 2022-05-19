@@ -310,9 +310,28 @@ poly_smooth <- function(poly, smoothness = 3, min_points = 8) {
 #' for(i in unique(overlay$cluster)) polygon(overlay[overlay$cluster == i, 1:2])
 #'
 #' # Increasing offset without joining polygons
-#' overlay <- makeOverlay(dat,min_pts = 1, stepsize = 0.02, minsize = 4, offset_prop = 0.08, join_polys = FALSE)
+#' overlay <- makeOverlay(dat,min_pts = 1, stepsize = 0.02,
+#'    minsize = 4, offset_prop = 0.08, join_polys = FALSE)
 #' plot(dat, pch = 16, cex = 0.5, xlim = range(overlay[,1:2]), ylim = range(overlay[,1:2]))
 #' for(i in unique(overlay$cluster)) polygon(overlay[overlay$cluster == i, 1:2])
+#'
+#' \dontrun{
+#' # With ggplot2, showcasing holes
+#' library(ggplot2)
+#' dat =  as.data.frame(matrix(rnorm(1000), ncol = 2))
+#' colnames(dat) = c("x", "y")
+#' dat = dat[abs(dat$x) > 0.5 | abs(dat$y) > 0.5,]
+
+#' overlay <- makeOverlay(dat, min_pts = 1, stepsize = 0.02,
+#'    minsize = 4, offset_prop = 0.01, join_polys = TRUE)
+
+#' ggplot(data = dat, aes(x = x, y = y)) +
+#'   geom_point() +
+#'   geom_polygon(data = overlay,
+#'                aes_string(x = "x", y = "y", group = "cluster_hole", subgroup = "id_hole"),
+#'                color = "red", fill = "red", alpha = 0.3) +
+#'   theme_bw()
+#'}
 #'
 #' @export
 
