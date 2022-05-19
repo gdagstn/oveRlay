@@ -369,7 +369,7 @@ makeOverlay = function(data, stepsize, minsize, min_pts = 2, offset_prop = 0.01,
     conts_list_inner = split(conts_holed[conts_holed$hole == "inner", ], conts_holed[conts_holed$hole == "inner", "cluster_hole"])
     conts_list_union = Reduce(x = conts_list_outer, f = function(x, y) polyclip(x, y, op = "union"))
     conts_list_union = lapply(seq_len(length(conts_list_union)), function(x) data.frame("x" = conts_list_union[[x]]$x, "y" = conts_list_union[[x]]$y, "cluster" = x))
-    conts_holed = rbind(find_holes(do.call(rbind, conts_list_union)), do.call(rbind, conts_list_inner))
+    conts_holed = find_holes(rbind(do.call(rbind, conts_list_union)), do.call(rbind, conts_list_inner))
   }
 
   return(conts_holed)
