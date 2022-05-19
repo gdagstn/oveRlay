@@ -322,8 +322,6 @@ makeOverlay = function(data, stepsize, minsize, min_pts = 2, offset_prop = 0.01,
 
   conts = makeContour(data, stepsize = stepsize, minsize = minsize, min_pts = min_pts)
 
-  if(smooth) conts = lapply(conts, function(x) poly_smooth(x, smoothness = smoothness, min_points  = minsize))
-
   conts_holed = find_holes(do.call(rbind, conts))
 
   if(!is.null(offset_prop)) {
@@ -365,13 +363,22 @@ makeOverlay = function(data, stepsize, minsize, min_pts = 2, offset_prop = 0.01,
   }
 
   if(join_polys & length(unique(conts_holed$cluster[conts_holed$hole == "outer"])) > 1) {
-    conts_list_outer = split(conts_holed[conts_holed$hole == "outer", "cluster"], conts_holed[conts_holed$hole == "outer", "cluster_hole"])
-    conts_list_inner = split(conts_holed[conts_holed$hole == "inner", "cluster"], conts_holed[conts_holed$hole == "inner", "cluster_hole"])
+
+    conts_list_outer = split(conts_holed[conts_holed$hole == "outer", c("x", "y", "cluster")], conts_holed[conts_holed$hole == "outer", "cluster"])
+    conts_inner = conts_holed[conts_holed$hole == "inner", c("x", "y", "cluster")]
     conts_list_union = Reduce(x = conts_list_outer, f = function(x, y) polyclip(x, y, op = "union"))
     conts_list_union = lapply(seq_len(length(conts_list_union)), function(x) data.frame("x" = conts_list_union[[x]]$x, "y" = conts_list_union[[x]]$y, "cluster" = x))
-    conts_holed = rbind(do.call(rbind, conts_list_union), do.call(rbind, conts_list_inner))
-    conts_holed = find_holes(conts_holed)  
-   }
+
+    conts_joined = do.call(rbind, conts_list_union)
+
+     if(any(unique(conts_joined$cluster) %in% conts_inner$cluster)) {
+       conts_inner$cluster = conts_inner$cluster + max(conts_joined$cluster)
+     }
+     conts_all = rbind(conts_joined, conts_inner)
+    conts_holed = find_holes(conts_all)
+  }
+
+  if(smooth) conts_holed = do.call(rbind, lapply(split(conts_holed, conts_holed$id_hole), function(x) poly_smooth(x, smoothness = smoothness, min_points  = minsize)))
 
   return(conts_holed)
 
