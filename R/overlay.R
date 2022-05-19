@@ -255,8 +255,8 @@ poly_smooth <- function(poly, smoothness = 3, min_points = 8) {
     poly_sm <- poly[, 1:2]
   } else {
     poly_sm <- as.data.frame(smooth_ksmooth(as.matrix(poly[, 1:2]),
-                                                     smoothness = smoothness,
-                                                     wrap = TRUE))
+                                            smoothness = smoothness,
+                                            wrap = TRUE))
   }
 
   # Restore/add original columns
@@ -366,9 +366,10 @@ makeOverlay = function(data, stepsize, minsize, min_pts = 2, offset_prop = 0.01,
 
   if(join_polys & length(unique(conts_holed$cluster[conts_holed$hole == "outer"])) > 1) {
     conts_list_outer = split(conts_holed[conts_holed$hole == "outer", ], conts_holed[conts_holed$hole == "outer", "cluster_hole"])
+    conts_list_inner = split(conts_holed[conts_holed$hole == "inner", ], conts_holed[conts_holed$hole == "inner", "cluster_hole"])
     conts_list_union = Reduce(x = conts_list_outer, f = function(x, y) polyclip(x, y, op = "union"))
     conts_list_union = lapply(seq_len(length(conts_list_union)), function(x) data.frame("x" = conts_list_union[[x]]$x, "y" = conts_list_union[[x]]$y, "cluster" = x))
-    conts_holed = find_holes(do.call(rbind, conts_list_union))
+    conts_holed = rbind(find_holes(do.call(rbind, conts_list_union)), do.call(rbind, conts_list_inner))
   }
 
   return(conts_holed)
