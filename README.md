@@ -1,12 +1,12 @@
 <img src="https://user-images.githubusercontent.com/21171362/169328724-cf55b344-bee2-44c7-b4a8-eddac054dff8.png" align="right" alt="" width="150" />
 
 # oveRlay
-Annotate 2D point clouds using overlay polygons
+Annotate 2D point clouds using overlay polygons.
 
 # Motivation and methodology
 
 This R package (in development) offers an alternative to the concave hull geom in `ggforce` by taking an entirely different approach:
-- creaties a regularly spaced grid of squares, whose side is defined by a step size (a fraction of the range of your data)
+- creates a regularly spaced grid of squares, whose side is defined by a step size (a fraction of the range of your data)
 - calculates which squares contain points, with user-defined tolerance, and keeps the vertices
 - uses `isoband` to calculate a contour joining vertices on the grid
 - calculates holes, i.e. which polygons are inside other polygons, so that their space can be "subtracted" when plotting by `ggplot2` 
@@ -31,7 +31,7 @@ install_github("gdagstn/oveRlay")
 
 # Examples
 
-Using oveRlay is simple:
+Using oveRlay is easy:
 
 
 ```{r}
