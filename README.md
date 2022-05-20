@@ -1,4 +1,4 @@
-<img src="https://user-images.githubusercontent.com/21171362/169328724-cf55b344-bee2-44c7-b4a8-eddac054dff8.png" align="right" alt="" width="200" />
+<img src="https://user-images.githubusercontent.com/21171362/169328724-cf55b344-bee2-44c7-b4a8-eddac054dff8.png" align="right" alt="" width="150" />
 
 # oveRlay
 Annotate 2D point clouds using overlay polygons
