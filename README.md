@@ -114,5 +114,4 @@ ggplot(data = dat, aes(x = x, y = y)) +
 - Adrian Baddeley for the [polyclip](https://github.com/baddstats/polyclip) package, and Angus Johnson for the original [Clipper](http://angusj.com/delphi/clipper.php) library
 - Matthew Strimas Mackey for the [smoothr](https://strimas.com/smoothr/) package
 - Hadley Wickham, Winston Chang, Lionel Henry, Thomas Lin Pedesen, Kohske Takahashi, Claus Wilke, Kara Woo, and Hiroaki Yutani for the [ggplot2](https://ggplot2.tidyverse.org/) package
-- Simon Urbanek for the `png` and `jpeg` packages
-- Hadley Wickham for the `reshape2` package
+
