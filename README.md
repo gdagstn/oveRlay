@@ -1,10 +1,6 @@
 <img src="https://user-images.githubusercontent.com/21171362/169328724-cf55b344-bee2-44c7-b4a8-eddac054dff8.png" align="right" alt="" width="150" />
 
 # oveRlay
-<!-- badges: start -->
-  [![](https://img.shields.io/badge/devel%20version-0.0.0.900-orange.svg)](https://github.com/gdagstn/oveRlay)
-  [![R-CMD-check](https://github.com/gdagstn/oveRlay/workflows/R-CMD-check/badge.svg)](https://github.com/gdagstn/oveRlay/actions)
-<!-- badges: end -->
 Annotate 2D point clouds using overlay polygons.
 
 # Motivation and methodology
@@ -114,4 +110,3 @@ ggplot(data = dat, aes(x = x, y = y)) +
 - Adrian Baddeley for the [polyclip](https://github.com/baddstats/polyclip) package, and Angus Johnson for the original [Clipper](http://angusj.com/delphi/clipper.php) library
 - Matthew Strimas Mackey for the [smoothr](https://strimas.com/smoothr/) package
 - Hadley Wickham, Winston Chang, Lionel Henry, Thomas Lin Pedesen, Kohske Takahashi, Claus Wilke, Kara Woo, and Hiroaki Yutani for the [ggplot2](https://ggplot2.tidyverse.org/) package
-
