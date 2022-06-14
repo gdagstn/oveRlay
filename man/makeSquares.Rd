@@ -19,3 +19,6 @@ A data frame containing x and y coordinates for grid centers and for
 \description{
 Creates a grid of squares centered on an input grid
 }
+\author{
+Giuseppe D'Agostino
+}

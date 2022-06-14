@@ -24,3 +24,6 @@ A list of data frames containing the ordered set of coordinates to draw
 \description{
 Creates an isoband around a cloud of points assigned to a square grid
 }
+\author{
+Giuseppe D'Agostino
+}

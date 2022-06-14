@@ -5,28 +5,30 @@
 \title{Make overlay contour}
 \usage{
 makeOverlay(
-  data,
-  stepsize,
-  minsize,
+  point_coordinates,
+  stepsize = 0.1,
+  minsize = 4,
   min_pts = 2,
-  offset_prop = 0.01,
+  offset_prop = 0.05,
   join_polys = TRUE,
   smooth = TRUE,
   smoothness = 3
 )
 }
 \arguments{
-\item{data}{a matrix ord data frame containing x and y coordinates of points}
+\item{point_coordinates}{a matrix ord data frame containing x and y coordinates of points}
 
 \item{stepsize}{numeric, the relative step size used to build the square grid,
 expressed as proportion of the maximum span of the range of \code{data}}
 
-\item{minsize}{numeric, the minimum size of an overlay cluster}
+\item{minsize}{numeric, the minimum size of an overlay cluster.
+Default is 4 points (one square tile).}
 
-\item{min_pts}{numeric, the minimum number of points to be enclosed}
+\item{min_pts}{numeric, the minimum number of points to be enclosed.
+Default is 1 (all points)}
 
 \item{offset_prop}{numeric, the proportion by which polygons are offset
-(inflated if outer, deflated if holes)}
+(inflated if outer, deflated if holes). Default is 0.05.}
 
 \item{join_polys}{logical, should overlapping polygons be joined? Default is TRUE}
 
@@ -42,4 +44,84 @@ A data frame containing ordered coordinates for polygon vertices and
 }
 \description{
 Make an overlay contour by creating isobands of a square tessellation
+}
+\details{
+This function draws an overlay contour that nicely encases points from
+   2D cloud at a user-selected level of granularity. The algorithm works through
+   the following steps:
+\enumerate{
+   \item Tessellate the space occupied by the data by squares whose side is determined
+     by the \code{stepsize} parameter. \code{stepsize} is a fraction of the maximum
+     range in the data, i.e. it takes \code{abs(diff(range(point_coordinates)))} and multiplies it
+     by the value of \code{stepsize} to obtain the length of each square.
+   \item Check, for every square, how many points it contains. Discard empty squares
+     and/or squares that do not contain a minimum of \code{min_pts}. If a point
+     lies on the edge of a square, it is included.
+   \item Join non-empty square vertices with isobands (through \code{isoband}) and
+     obtain one or more encasing  polygons. These will be grouped by \code{cluster}.
+   - Find which polygons constitute holes ("inner") and which are instead
+     filled ("outer"), and label them separately.
+   \item Optional: offset the encasing polygons by a proportional margin defined
+     by \code{offset_prop}, using \code{polyclip}. Given the range of polygon
+     coordinates, the total offset will be \code{abs(diff(range(coordinates))) * offset_prop}.
+     "outer" polygons will be inflated (positive offset) and "inner" polygons
+     will be deflated (negative offset).
+   \item Optional: join offset polygons. If the offset increases the size of polygons
+     so that they overlap, \code{polyclip} is used to calculate the union of
+     polygons.
+ }
+   The resulting object is a \code{data.frame} containing the following columns:
+\itemize{
+   \item *x, y*: ordered coordinates for each polygon
+   \item *cluster* the original cluster assigned by \code{isoband}
+   \item *hole* either "outer" (not a hole) or "inner" (hole)
+   \item *cluster_hole* group level for ggplot2 aesthetic
+   \item *id_hole* subgroup level for ggplot2 aesthetic
+ }
+   Note that it is possible to use this output in base R graphics, but holes
+   will be drawn as other polygons without removing space.
+}
+\examples{
+
+# Normal usage
+dat <- matrix(rnorm(1000), ncol = 2)
+overlay <- makeOverlay(dat, min_pts = 1, stepsize = 0.06, minsize = 4)
+plot(dat, pch = 16, cex = 0.5, xlim = range(overlay[,1:2]), ylim = range(overlay[,1:2]))
+for(i in unique(overlay$cluster)) polygon(overlay[overlay$cluster == i, 1:2])
+
+# Decreasing step size (increasing granularity)
+overlay <- makeOverlay(dat, min_pts = 1, stepsize = 0.02, minsize = 4)
+plot(dat, pch = 16, cex = 0.5, xlim = range(overlay[,1:2]), ylim = range(overlay[,1:2]))
+for(i in unique(overlay$cluster)) polygon(overlay[overlay$cluster == i, 1:2])
+
+# Increasing offset
+overlay <- makeOverlay(dat,min_pts = 1, stepsize = 0.02, minsize = 4, offset_prop = 0.08)
+plot(dat, pch = 16, cex = 0.5, xlim = range(overlay[,1:2]), ylim = range(overlay[,1:2]))
+for(i in unique(overlay$cluster)) polygon(overlay[overlay$cluster == i, 1:2])
+
+# Increasing offset without joining polygons
+overlay <- makeOverlay(dat,min_pts = 1, stepsize = 0.02,
+   minsize = 4, offset_prop = 0.08, join_polys = FALSE)
+plot(dat, pch = 16, cex = 0.5, xlim = range(overlay[,1:2]), ylim = range(overlay[,1:2]))
+for(i in unique(overlay$cluster)) polygon(overlay[overlay$cluster == i, 1:2])
+
+\dontrun{
+# With ggplot2, showcasing holes
+library(ggplot2)
+dat =  as.data.frame(matrix(rnorm(1000), ncol = 2))
+colnames(dat) = c("x", "y")
+dat = dat[abs(dat$x) > 0.5 | abs(dat$y) > 0.5,]
+overlay <- makeOverlay(dat, min_pts = 1, stepsize = 0.02,
+   minsize = 4, offset_prop = 0.01, join_polys = TRUE)
+ggplot(data = dat, aes(x = x, y = y)) +
+  geom_point() +
+  geom_polygon(data = overlay,
+               aes_string(x = "x", y = "y", group = "cluster_hole", subgroup = "id_hole"),
+               color = "red", fill = "red", alpha = 0.3) +
+  theme_bw()
+}
+
+}
+\author{
+Giuseppe D'Agostino
 }

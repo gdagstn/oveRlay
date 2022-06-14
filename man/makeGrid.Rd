@@ -18,3 +18,6 @@ A data frame containing x and y coordinates for grid points
 \description{
 Creates a regularly spaced grid covering a set of points
 }
+\author{
+Giuseppe D'Agostino
+}

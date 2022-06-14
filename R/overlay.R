@@ -7,6 +7,8 @@
 #' @param stepsize numeric, the size of the step for the grid
 #'
 #' @return A data frame containing x and y coordinates for grid points
+#'
+#' @author Giuseppe D'Agostino
 
 makeGrid = function(data, stepsize){
   maxstep = max(range(data)) + stepsize
@@ -24,9 +26,12 @@ makeGrid = function(data, stepsize){
 #' @param grid output of \code{makeGrid}
 #' @param stepsize numeric, the size of the step for the grid
 #'
+#'
 #' @return A data frame containing x and y coordinates for grid centers and for
 #'     vertices of each square, named A, B, C, D and ordered clockwise from the
 #'     top right one
+#'
+#' @author Giuseppe D'Agostino
 
 makeSquares = function(grid, stepsize) {
 
@@ -52,6 +57,8 @@ makeSquares = function(grid, stepsize) {
 #'
 #' @param squares output of \code{makeSquares}
 #' @param stepsize numeric, the size of the step for the grid
+#'
+#' @author Giuseppe D'Agostino
 #'
 #' @return A data frame containing x and y coordinates for square vertices
 #'    (with a value = 1) and the bounding box filled with value = 0. The box is
@@ -91,6 +98,8 @@ makeBoundingBox <- function(squares,
 #'
 #' @return A list of data frames containing the ordered set of coordinates to draw
 #'     isoband polygons together with their clustering (disjointed polygon)
+#'
+#' @author Giuseppe D'Agostino
 #'
 #' @importFrom splancs inout
 #' @importFrom reshape2 acast
@@ -166,9 +175,11 @@ makeContour = function(data, stepsize, minsize = 8, min_pts = 1) {
 #'    to which cluster they belong, and a sub-clustering to allow \code{ggplot2}
 #'    to draw them as holes.
 #'
+#' @author Giuseppe D'Agostino
+#'
 #' @importFrom splancs inout
 
-find_holes <- function(ib_df){
+findHoles <- function(ib_df){
 
   if (length(unique(ib_df$cluster)) > 1) {
     hole_list <- list()
@@ -238,48 +249,82 @@ find_holes <- function(ib_df){
 #'     rounder shapes. Default is 3.
 #' @param min_points numeric, the minimum number of vertices to smooth.
 #'     Default is 8.
+#' @param n_dense numeric, the number of points to add to the polygon for more
+#'     smoothing. Default is 10.
 #'
 #' @return A data frame containing ordered coordinates for polygon vertices and
 #'    three columns indicating whether they are a hole ("inner") or not ("outer"),
 #'    to which cluster they belong, and a sub-clustering to allow \code{ggplot2}
 #'    to draw them as holes.
 #'
-#' @importFrom smoothr smooth_ksmooth
-#' @importFrom utils installed.packages
+#' @details This is a refactoring of `smoothr::smooth_ksmooth()` to isolate the
+#'    necessary code and avoid heavy GDAL-based dependencies. The code has been
+#'    simplified assuming `wrap = TRUE` and adding some other bits to handle DF
+#'    with other columns as input.
+#'
+#' @author Matthew Strimas-Mackey, modified by Giuseppe D'Agostino
+#'
+#' @importFrom stats ksmooth
 
-poly_smooth <- function(poly, smoothness = 3, min_points = 8) {
-
-  if (!"smoothr" %in% rownames(installed.packages())) stop("In order to use smoothing you must first install the package `smoothr`.")
+smoothPolygon <- function(poly, smoothness = 3, min_points = 8, n_dense = 10) {
 
   if (nrow(poly) < min_points) {
-    poly_sm <- poly[, 1:2]
-  } else {
-    poly_sm <- as.data.frame(smooth_ksmooth(as.matrix(poly[, 1:2]),
-                                            smoothness = smoothness,
-                                            wrap = TRUE))
-  }
 
-  # Restore/add original columns
+    poly_sm <- poly
+
+    } else {
+
+    poly_coords <- as.matrix(poly[,1:2])
+
+    d_poly = sqrt(rowSums(diff(as.matrix(poly_coords))^2))
+    bandwidth = mean(d_poly) * smoothness
+    dense_poly = addPoints(poly_coords, steps = n_dense)
+    npt = nrow(dense_poly)
+    wrapped <- rbind(dense_poly[-npt, ], dense_poly, dense_poly[-1, ])
+    d_dense = sqrt(rowSums(diff(as.matrix(wrapped))^2))
+
+    d_x = c(0, cumsum(d_dense))
+    poly_sm <- NULL
+
+    for (i in seq_len(ncol(wrapped))) {
+      ks <- ksmooth(d_x, wrapped[, i], n.points = length(d_x),
+                           kernel = "normal", bandwidth = bandwidth)
+      poly_sm <- cbind(poly_sm, ks[["y"]])
+
+      if (i == 1) {
+       keep_rows <- (ks$x >= d_x[npt]) & (ks$x <= d_x[(2 * npt - 1)])
+      }
+    }
+
+  poly_sm <- as.data.frame(poly_sm[keep_rows, ])
+  poly_sm[nrow(poly_sm), ] <- poly_sm[1, ]
+
+  #Restore/add original columns
   colnames(poly_sm) <- c("x", "y")
+  poly_sm <- as.data.frame(poly_sm)
 
   for (i in colnames(poly)[3:ncol(poly)]) {
-    poly_sm[, i] <- unique(poly[, i])
-  }
+      poly_sm[, i] <- unique(poly[, i])
+    }
 
+  }
   return(poly_sm)
 }
+
 
 #' Make overlay contour
 #'
 #' Make an overlay contour by creating isobands of a square tessellation
 #'
-#' @param data a matrix ord data frame containing x and y coordinates of points
+#' @param point_coordinates a matrix ord data frame containing x and y coordinates of points
 #' @param stepsize numeric, the relative step size used to build the square grid,
 #'     expressed as proportion of the maximum span of the range of \code{data}
-#' @param minsize numeric, the minimum size of an overlay cluster
-#' @param min_pts numeric, the minimum number of points to be enclosed
+#' @param minsize numeric, the minimum size of an overlay cluster.
+#'     Default is 4 points (one square tile).
+#' @param min_pts numeric, the minimum number of points to be enclosed.
+#'     Default is 1 (all points)
 #' @param offset_prop numeric, the proportion by which polygons are offset
-#'     (inflated if outer, deflated if holes)
+#'     (inflated if outer, deflated if holes). Default is 0.05.
 #' @param join_polys logical, should overlapping polygons be joined? Default is TRUE
 #' @param smooth logical, perform kernel smoothing of polygons? Default is TRUE
 #' @param smoothness numeric, smoothness parameter for kernel smoothing. Default is 3
@@ -295,7 +340,7 @@ poly_smooth <- function(poly, smoothness = 3, min_points = 8) {
 #' \enumerate{
 #'    \item Tessellate the space occupied by the data by squares whose side is determined
 #'      by the \code{stepsize} parameter. \code{stepsize} is a fraction of the maximum
-#'      range in the data, i.e. it takes \code{abs(diff(range(data)))} and multiplies it
+#'      range in the data, i.e. it takes \code{abs(diff(range(point_coordinates)))} and multiplies it
 #'      by the value of \code{stepsize} to obtain the length of each square.
 #'    \item Check, for every square, how many points it contains. Discard empty squares
 #'      and/or squares that do not contain a minimum of \code{min_pts}. If a point
@@ -324,8 +369,10 @@ poly_smooth <- function(poly, smoothness = 3, min_points = 8) {
 #'    Note that it is possible to use this output in base R graphics, but holes
 #'    will be drawn as other polygons without removing space.
 #'
+#' @author Giuseppe D'Agostino
 #'
 #' @importFrom polyclip polyoffset polyclip
+#' @importFrom scales rescale
 #'
 #' @examples
 #'
@@ -371,15 +418,29 @@ poly_smooth <- function(poly, smoothness = 3, min_points = 8) {
 #'
 #' @export
 
-makeOverlay = function(data, stepsize, minsize, min_pts = 2, offset_prop = 0.01,
+
+
+makeOverlay = function(point_coordinates, stepsize = 0.1, minsize = 4,
+                       min_pts = 2, offset_prop = 0.05,
                        join_polys = TRUE, smooth = TRUE,
                        smoothness = 3) {
 
-  stepsize = abs(diff(range(data))) * stepsize
+  point_coordinates = as.matrix(point_coordinates)
+  data_scaled = point_coordinates
+  ranges = apply(point_coordinates, 2, range)
+  range_diffs = apply(ranges, 2, diff)
+  to_rescale = which.min(range_diffs)
 
-  conts = makeContour(data, stepsize = stepsize, minsize = minsize, min_pts = min_pts)
+  data_scaled[,to_rescale] = rescale(data_scaled[,to_rescale],
+                                     from = ranges[,to_rescale],
+                                     to = ranges[,-to_rescale])
 
-  conts_holed = find_holes(do.call(rbind, conts))
+  stepsize = abs(diff(range(data_scaled))) * stepsize
+
+  conts = makeContour(data_scaled, stepsize = stepsize,
+                      minsize = minsize, min_pts = min_pts)
+
+  conts_holed = findHoles(do.call(rbind, conts))
 
   if(!is.null(offset_prop)) {
     conts_list = split(conts_holed, conts_holed$id_hole)
@@ -387,8 +448,10 @@ makeOverlay = function(data, stepsize, minsize, min_pts = 2, offset_prop = 0.01,
     outer_offset = unlist(lapply(conts_list, function(x) unique(x$hole) == "outer"))
     conts_outer_offset = conts_list[outer_offset]
     for(i in seq_len(length(conts_outer_offset))) {
-      offset_points = polyoffset(conts_outer_offset[[i]][,1:2], delta = abs(diff(range(data[,1:2]))) * offset_prop)
-      offset_coords = data.frame("x" = as.numeric(offset_points[[1]]$x), "y" = as.numeric(offset_points[[1]]$y))
+      offset_points = polyoffset(conts_outer_offset[[i]][,1:2],
+                                 delta = abs(diff(range(data_scaled[,1:2]))) * offset_prop)
+      offset_coords = data.frame("x" = as.numeric(offset_points[[1]]$x),
+                                 "y" = as.numeric(offset_points[[1]]$y))
 
       offset_coords$cluster = unique(conts_outer_offset[[i]]$cluster)
       offset_coords$hole = unique(conts_outer_offset[[i]]$hole)
@@ -402,9 +465,11 @@ makeOverlay = function(data, stepsize, minsize, min_pts = 2, offset_prop = 0.01,
     if(sum(inner_offset) >= 1) {
       conts_inner_offset = conts_list[inner_offset]
       for(i in seq_len(length(conts_inner_offset))) {
-        offset_points = polyoffset(conts_inner_offset[[i]][,1:2], delta = -abs(diff(range(data[,1:2]))) * offset_prop)
+        offset_points = polyoffset(conts_inner_offset[[i]][,1:2],
+                                   delta = -abs(diff(range(data_scaled[,1:2]))) * offset_prop)
         if(length(offset_points) < 1) next
-        offset_coords = data.frame("x" = as.numeric(offset_points[[1]]$x), "y" = as.numeric(offset_points[[1]]$y))
+        offset_coords = data.frame("x" = as.numeric(offset_points[[1]]$x),
+                                   "y" = as.numeric(offset_points[[1]]$y))
 
         offset_coords$cluster = unique(conts_inner_offset[[i]]$cluster)
         offset_coords$hole = unique(conts_inner_offset[[i]]$hole)
@@ -435,11 +500,77 @@ makeOverlay = function(data, stepsize, minsize, min_pts = 2, offset_prop = 0.01,
        conts_inner$cluster = conts_inner$cluster + max(conts_joined$cluster)
      }
      conts_all = rbind(conts_joined, conts_inner)
-     conts_final = find_holes(conts_all)
+     conts_holed = findHoles(conts_all)
   }
 
-  if(smooth)  conts_final = do.call(rbind, lapply(split(conts_holed, conts_holed$id_hole),
-                                                  function(x) poly_smooth(x, smoothness = smoothness, min_points  = minsize)))
-  return(conts_final)
+  if(smooth)  {
+    conts_holed = do.call(rbind,
+                          lapply(split(conts_holed, conts_holed$id_hole),
+                                 function(x) smoothPolygon(x,
+                                                           smoothness = smoothness,
+                                                           min_points  = minsize)))
+  }
 
+
+  conts_holed[,to_rescale] = rescale(conts_holed[,to_rescale],
+                                     from = ranges[,-to_rescale],
+                                     to = ranges[,to_rescale])
+
+  return(conts_holed)
 }
+
+
+#' Add points
+#'
+#' Increases the number of points in a polygon while maintaining the shape
+#'
+#' @param poly a data frame containing ordered coordinates with polygon vertices
+#' @param steps numeric, the number of points that should be added between
+#'    each point. Default is 10.
+#'
+#' @return A data frame containing densified coordinates for polygon vertices and
+#'    any other column (assuming original columns contained unique values).
+#'
+#' @details Internal use only.
+#'
+#' @author Giuseppe D'Agostino
+
+
+addPoints <- function(poly, steps = 5) {
+
+  colnames(poly) <- NULL
+  polygon_coords = as.matrix(poly[,1:2])
+  new_coords = poly[1,]
+
+  for(i in 1:(nrow(poly)-1))
+  {
+    new_xy = cbind(seq(polygon_coords[i,1],
+                       polygon_coords[i+1,1], length.out = steps+1),
+                   seq(polygon_coords[i,2],
+                       polygon_coords[i+1,2], length.out = steps+1))
+    tmp_coords = polygon_coords[i,]
+    new_coords = rbind(new_coords, tmp_coords, new_xy)
+  }
+
+  new_xy_last = cbind(seq(polygon_coords[nrow(polygon_coords),1],
+                          polygon_coords[1,1], length.out = steps+1),
+                      seq(polygon_coords[nrow(polygon_coords),2],
+                          polygon_coords[1,2], length.out = steps+1))
+
+  new_coords = new_coords[2:nrow(new_coords),]
+  new_coords = new_coords[!duplicated(new_coords),]
+  new_coords = as.data.frame(rbind(new_coords, new_xy_last))
+
+  rownames(new_coords) = NULL
+  colnames(new_coords) <- c("x", "y")
+
+  for (i in colnames(poly)[3:ncol(poly)]) {
+    new_coords[, i] <- unique(poly[, i])
+  }
+
+  return(new_coords)
+}
+
+
+
+

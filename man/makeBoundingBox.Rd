@@ -19,3 +19,6 @@ A data frame containing x and y coordinates for square vertices
 \description{
 Creates a bounding box around a subset of square vertices on a grid
 }
+\author{
+Giuseppe D'Agostino
+}

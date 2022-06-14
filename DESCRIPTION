@@ -15,7 +15,6 @@ Imports: isoband,
          polyclip, 
          reshape2, 
          scales, 
-         smoothr, 
          splancs
 Encoding: UTF-8
 LazyData: true
