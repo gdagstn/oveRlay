@@ -1,5 +1,5 @@
 <!-- badges: start -->
-  [![](https://img.shields.io/badge/devel%20version-0.0.0.900-orange.svg)](https://github.com/gdagstn/oveRlay)
+  [![](https://img.shields.io/badge/devel%20version-0.0.0.901-orange.svg)](https://github.com/gdagstn/oveRlay)
   [![R-CMD-check](https://github.com/gdagstn/oveRlay/workflows/R-CMD-check/badge.svg)](https://github.com/gdagstn/oveRlay/actions)
 <!-- badges: end -->
 
