@@ -1,7 +1,7 @@
 Package: oveRlay
 Type: Package
 Title: Overlay polygons for 2D point clouds
-Version: 0.0.901
+Version: 1.0.0
 Author: Giuseppe D'Agostino <g.a.dagostino@gmail.com>
 Maintainer: Giuseppe D'Agostino <g.a.dagostino@gmail.com>
 Description: Generate polygons to annotate 2D point clouds such as scatterplots,
@@ -18,4 +18,4 @@ Imports: isoband,
          splancs
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.3
