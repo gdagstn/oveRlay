@@ -7,12 +7,11 @@
 <div id="toc">
 	<ul align="left" style="list-style: none;">
 		<summary>
-			<h1>cellula</h1>
+			<h1>oveRlay</h1>
 		</summary>
 	</ul>
 </div>
 
-# oveRlay
 Annotate 2D point clouds using overlay polygons.
 
 # Motivation and methodology
